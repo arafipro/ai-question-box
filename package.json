@@ -1,0 +1,16 @@
+{
+  "name": "ai-question-box",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify"
+  },
+  "dependencies": {
+    "@langchain/cloudflare": "^0.1.0",
+    "hono": "^4.6.20",
+    "langchain": "^0.3.15"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "wrangler": "^3.101.0"
+  }
+}

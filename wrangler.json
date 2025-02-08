@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-question-box",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-02-07",
+
+  "ai": {
+    "binding": "AI"
+  },
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "ai-question-box-index"
+    }
+  ]
+}
