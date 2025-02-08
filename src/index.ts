@@ -53,5 +53,11 @@ app.get("/add", async (c) => {
 
   return c.json({ success: true });
 });
+app.get("/delete", async (c) => {
+  const store = VectorizeStore(c.env.AI, c.env.VECTORIZE);
+  await store.delete({ ids: ["id1", "id2", "id3"] });
+
+  return c.json({ success: true });
+});
 
 export default app;
