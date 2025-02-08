@@ -1,12 +1,10 @@
-import type { Ai, VectorizeIndex } from "@cloudflare/workers-types";
-import { CloudflareWorkersAIEmbeddings } from "@langchain/cloudflare";
+import {
+  CloudflareVectorizeStore,
+  CloudflareWorkersAIEmbeddings,
+} from "@langchain/cloudflare";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-
-type Env = {
-  AI: Ai;
-  VECTORIZE: VectorizeIndex;
-};
+import { Env } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -18,9 +16,12 @@ app.get("/", async (c) => {
     binding: c.env.AI,
     modelName: "@cf/baai/bge-base-en-v1.5",
   });
-  const VectorizeData = await embeddings.embedQuery(text);
+  const store = new CloudflareVectorizeStore(embeddings, {
+    index: c.env.VECTORIZE,
+  });
+  const results = await store.similaritySearch("どこが優勝した？", 3);
 
-  return c.json(VectorizeData);
+  return c.json(results);
 });
 
 export default app;
