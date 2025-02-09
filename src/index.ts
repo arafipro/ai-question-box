@@ -5,6 +5,8 @@ import {
 } from "@langchain/cloudflare";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { Document } from "langchain/document";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Env } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -29,27 +31,28 @@ app.get("/", async (c) => {
 
   return c.json(results);
 });
-app.get("/add", async (c) => {
+type AddText = { addText: string };
+function DocsConvertMetadataFlatFormat(docs: Document<Record<string, any>>[]) {
+  const convertDocs = docs.map((doc, index) => ({
+    ...doc,
+    metadata: {
+      source: String(doc.metadata.source || ""),
+      timestamp: Date.now(),
+      id: `doc_${Date.now()}_${index}`,
+    },
+  }));
+
+  return convertDocs;
+}
+app.post("/add", async (c) => {
+  const { addText } = await c.req.json<AddText>();
+  const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000 });
+  const docs = await textSplitter.createDocuments([addText]);
+  const convertDocs = DocsConvertMetadataFlatFormat(docs);
   const store = VectorizeStore(c.env.AI, c.env.VECTORIZE);
-  await store.addDocuments(
-    [
-      {
-        pageContent:
-          "2024年の日本シリーズは、横浜DeNAベイスターズ（以下、DeNA）と福岡ソフトバンクホークス（以下、ソフトバンク）による第75回日本選手権シリーズ",
-        metadata: {},
-      },
-      {
-        pageContent: "2024年10月26日に開幕し、11月3日の第6戦まで行われた。",
-        metadata: {},
-      },
-      {
-        pageContent:
-          "DeNAが4勝2敗でソフトバンクを破り、26年ぶり3度目の日本一に輝いた。",
-        metadata: {},
-      },
-    ],
-    { ids: ["id1", "id2", "id3"] }
-  );
+  await store.addDocuments(convertDocs, {
+    ids: convertDocs.map((doc) => doc.metadata.id),
+  });
 
   return c.json({ success: true });
 });
