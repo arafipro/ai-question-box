@@ -56,11 +56,20 @@ app.post("/add", async (c) => {
 
   return c.json({ success: true });
 });
-app.get("/delete", async (c) => {
+type IDS = { ids: string[] };
+
+app.delete("/", async (c) => {
+  const { ids } = await c.req.json<IDS>();
   const store = VectorizeStore(c.env.AI, c.env.VECTORIZE);
-  await store.delete({ ids: ["id1", "id2", "id3"] });
+  await store.delete({ ids: ids });
 
   return c.json({ success: true });
 });
+app.delete("/:id", async (c) => {
+  const id = await c.req.param("id");
+  const store = VectorizeStore(c.env.AI, c.env.VECTORIZE);
+  await store.delete({ ids: [id] });
 
+  return c.json({ success: true });
+});
 export default app;
