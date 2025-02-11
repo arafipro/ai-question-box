@@ -1,4 +1,4 @@
-import type { Ai } from "@cloudflare/workers-types";
+import type { Ai, VectorizeIndex } from "@cloudflare/workers-types";
 import {
   CloudflareVectorizeStore,
   CloudflareWorkersAIEmbeddings,
@@ -23,11 +23,13 @@ function VectorizeStore(ai: Ai, vectorize: VectorizeIndex) {
 }
 
 app.use("*", cors());
-app.get("/", async (c) => {
-  const text =
-    "2024年の日本シリーズは、横浜DeNAベイスターズ（以下、DeNA）と福岡ソフトバンクホークス（以下、ソフトバンク）による第75回日本選手権シリーズ。";
+app.get("/:search?/:maxResults?", async (c) => {
+  const { search, maxResults } = await c.req.param();
   const store = VectorizeStore(c.env.AI, c.env.VECTORIZE);
-  const results = await store.similaritySearch("どこが優勝した？", 3);
+  const results = await store.similaritySearch(
+    search ?? "",
+    parseInt(maxResults ?? "10")
+  );
 
   return c.json(results);
 });
