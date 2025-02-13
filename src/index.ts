@@ -1,26 +1,11 @@
-import type { Ai, VectorizeIndex } from "@cloudflare/workers-types";
-import {
-  CloudflareVectorizeStore,
-  CloudflareWorkersAIEmbeddings,
-} from "@langchain/cloudflare";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { Document } from "langchain/document";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { Env } from "./types";
+import { DocsConvertMetadataFlatFormat } from "./lib/docs-convert-metadata-flat-format";
+import { VectorizeStore } from "./lib/vectorize-store";
+import { AddText, Env, IDS } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
-
-function VectorizeStore(ai: Ai, vectorize: VectorizeIndex) {
-  const embeddings = new CloudflareWorkersAIEmbeddings({
-    binding: ai,
-    modelName: "@cf/baai/bge-base-en-v1.5",
-  });
-  const store = new CloudflareVectorizeStore(embeddings, {
-    index: vectorize,
-  });
-  return store;
-}
 
 app.use("*", cors());
 app.get("/:search?/:maxResults?", async (c) => {
@@ -33,19 +18,6 @@ app.get("/:search?/:maxResults?", async (c) => {
 
   return c.json(results);
 });
-type AddText = { addText: string };
-function DocsConvertMetadataFlatFormat(docs: Document<Record<string, any>>[]) {
-  const convertDocs = docs.map((doc, index) => ({
-    ...doc,
-    metadata: {
-      source: String(doc.metadata.source || ""),
-      timestamp: Date.now(),
-      id: `doc_${Date.now()}_${index}`,
-    },
-  }));
-
-  return convertDocs;
-}
 app.post("/add", async (c) => {
   const { addText } = await c.req.json<AddText>();
   const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000 });
@@ -58,8 +30,6 @@ app.post("/add", async (c) => {
 
   return c.json({ success: true });
 });
-type IDS = { ids: string[] };
-
 app.delete("/", async (c) => {
   const { ids } = await c.req.json<IDS>();
   const store = VectorizeStore(c.env.AI, c.env.VECTORIZE);
